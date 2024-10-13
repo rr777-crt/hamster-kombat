@@ -1,0 +1,118 @@
+<html>
+    <head>
+
+    </head>
+    <body>
+        <a  href class="ac"="./index.html">hamster</a>
+             <a href="./about.html">info</a>
+        <header>
+            
+            <div>
+                хомяков: <b id="score">0</b>
+            </div>
+            <div>
+                За клик +<b id="add">1</b>
+            </div>
+             <div>
+                множитель <b id="x">0</b>
+            </div>
+        </header>
+        <main>
+            <div id="button">
+            </div>
+        </main>
+        <footer>
+            <button id="add-2">
+                <span>+2 за клик</span>
+                100 хомяков
+            </button>
+            <button id="add-5">
+                <span>+5 за клик</span>
+                235 хомяков
+            </button>
+            <button id="add-10">
+                <span>+10 за клик</span>
+                1250 хомяков
+            </button>
+            <button id="add-20">
+                <span>+20 за клик</span>
+                1850 хомяков
+            </button>
+            <button id="add-50">
+                <span>+50 за клик</span>
+                5000 хомяков
+            </button>
+              <button id="add-20000">
+                <span>+??? за клик</span>
+                100000 хомяков
+            </button>
+            <button id="add-200">
+                <span>+200 за клик</span>
+                12000 хомяков
+            </button>
+             <button id="add-x2">
+                <span>x2 за клик</span>
+                1000 хомяков
+            </button>
+        </footer> 
+    </body>
+    <script>
+        'use strict'
+        const scoreText = document.getElementById("score")
+        const addText = document.getElementById("add")
+        const button = document.getElementById("button")
+        const btnAdd2 = document.getElementById("add-2")
+        const btnAdd5 = document.getElementById("add-5")
+        const btnAdd10 = document.getElementById("add-10")
+        const btnAdd20 = document.getElementById("add-20")
+        const btnAdd50 = document.getElementById("add-50")
+        const btnAdd200 = document.getElementById("add-200")
+        const btnAdd20000 = document.getElementById("add-20000")
+        const btnAddx2 = document.getElementById("add-x2")
+        
+
+        let score = 0
+        let add = 1
+
+        button.onclick = getClick
+
+        btnAdd2.onclick = () => getClickAdd(2, 100)
+        btnAdd5.onclick = () => getClickAdd(5, 235)
+        btnAdd10.onclick = () => getClickAdd(10, 1250)
+        btnAdd20.onclick = () => getClickAdd(20, 1850)
+        btnAdd50.onclick = () => getClickAdd(50, 5000)
+        btnAdd200.onclick = () => getClickAdd(200, 12000)
+        btnAdd20000.onclick = () => getClickAdd(20000, 100000)
+        btnAddx2.onclick = () => getClickAMultiply(2, 1)
+
+
+        function getClick() {
+            console.log(add)
+            score += add
+            scoreText.innerText = score
+        }
+
+
+        function getClickAdd(n, price) {
+            if (score < price) return
+             
+
+            score -= price
+            scoreText.innerText = score
+            
+            add = n
+            addText.innerText = add
+        }
+
+        function getClickMultiply(x, price) {
+            if (score < price) return
+             
+
+            score -= price
+            scoreText.innerText = score
+            
+            add = add * x
+            addText.innerText = add
+        }
+    </script>
+</html>
