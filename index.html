@@ -1,154 +1,1674 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Выживание в волнах</title>
     <style>
-        .container {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            height: 100%;
+            max-height: 850px;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+            z-index: 1;
+        }
+        
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10;
+            padding: 20px;
             text-align: center;
-            padding: 20px;
-            font-family: Arial, sans-serif;
         }
         
-        .chest {
-            font-size: 80px;
-            cursor: pointer;
-            margin: 30px auto;
-            padding: 20px;
-            border: 4px solid transparent;
-            border-radius: 15px;
-            transition: 0.1s;
-            width: 120px;
+        .hidden {
+            display: none;
         }
         
-        .gold-flash {
-            border-color: #ffd700;
-            box-shadow: 0 0 20px #ffd700;
-            background-color: #fff9c4;
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #ff7b25;
+            text-shadow: 0 0 10px rgba(255, 123, 37, 0.7);
+            font-weight: bold;
+        }
+        
+        h2 {
+            font-size: 2rem;
+            margin: 20px 0;
+            color: #ff7b25;
+        }
+        
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            max-width: 80%;
+            line-height: 1.5;
         }
         
         button {
-            margin: 10px;
-            padding: 12px 25px;
-            cursor: pointer;
-            background: #4CAF50;
+            padding: 16px 35px;
+            font-size: 1.3rem;
+            background: linear-gradient(to bottom, #ff7b25, #e64a19);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 50px;
+            margin: 15px;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            font-weight: bold;
         }
         
-        #status {
-            margin: 20px;
-            font-size: 20px;
-            color: #333;
+        button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
         }
         
-        .disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background: #9E9E9E !important;
+        .shop-btn {
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            margin: 8px;
+            width: 90%;
+            text-align: left;
         }
         
-        #result {
-            font-size: 24px;
-            margin-top: 30px;
-            padding: 15px;
-            background: #f0f0f0;
+        #stats {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 1.1rem;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 15px;
             border-radius: 10px;
+            z-index: 3;
         }
+        
+        #health-bar-container {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 3;
+        }
+        
+        #health-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(to right, #ff0000, #ff7b25);
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        
+        #ammo-container {
+            position: absolute;
+            top: 45px;
+            left: 15px;
+            font-size: 1.1rem;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 12px;
+            border-radius: 10px;
+            z-index: 3;
+        }
+        
+        #money-container {
+            position: absolute;
+            top: 45px;
+            right: 15px;
+            font-size: 1.1rem;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 12px;
+            border-radius: 10px;
+            z-index: 3;
+        }
+        
+        #reload-indicator {
+            position: absolute;
+            bottom: 130px;
+            right: 25px;
+            width: 80px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 3;
+        }
+        
+        #reload-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #00ff00, #00cc00);
+            transition: width 0.1s linear;
+        }
+        
+        #gold-magazine-indicator {
+            position: absolute;
+            bottom: 150px;
+            right: 25px;
+            font-size: 0.9rem;
+            color: gold;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 4px 8px;
+            border-radius: 5px;
+            pointer-events: none;
+            z-index: 3;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 25px;
+            pointer-events: none;
+            z-index: 3;
+        }
+        
+        #joystick-container {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            pointer-events: auto;
+        }
+        
+        #joystick-background {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #joystick {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 123, 37, 0.9);
+            border-radius: 50%;
+            position: absolute;
+            top: 35px;
+            left: 35px;
+            transition: transform 0.1s;
+        }
+        
+        #shoot-btn {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: rgba(255, 0, 0, 0.7);
+            font-size: 1rem;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+            font-weight: bold;
+            transition: all 0.1s;
+        }
+        
+        #shoot-btn:active {
+            background: rgba(200, 0, 0, 0.9);
+            transform: scale(0.95);
+        }
+        
+        #shoot-btn.reloading {
+            background: rgba(100, 100, 100, 0.7);
+            box-shadow: 0 0 15px rgba(100, 100, 100, 0.5);
+        }
+        
+        #shoot-btn.gold-ammo {
+            background: linear-gradient(to bottom, #ffd700, #ffb700);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+        }
+        
+        #wave-alert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 25px 40px;
+            border-radius: 15px;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+            color: #ff7b25;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 123, 37, 0.7);
+            z-index: 4;
+        }
+        
+        .upgrade-options {
+            display: flex;
+            flex-direction: column;
+            width: 90%;
+            max-height: 70%;
+            overflow-y: auto;
+        }
+        
+        .upgrade-btn {
+            margin: 10px 0;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .shop-items {
+            display: flex;
+            flex-direction: column;
+            width: 90%;
+            max-height: 70%;
+            overflow-y: auto;
+        }
+        
+        .enemy {
+            position: absolute;
+            border-radius: 50%;
+        }
+        
+        .bullet {
+            position: absolute;
+            border-radius: 50%;
+            background: #f1c40f;
+            box-shadow: 0 0 10px #f1c40f;
+        }
+        
+        .gold-bullet {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(to right, #ffd700, #ffb700);
+            box-shadow: 0 0 15px gold;
+        }
+        
+        .explosion {
+            position: absolute;
+            border-radius: 50%;
+            background: #ff5722;
+            box-shadow: 0 0 20px #ff5722;
+            opacity: 0.7;
+        }
+        
+        .enemy-bullet {
+            position: absolute;
+            border-radius: 50%;
+            background: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
+        }
+        
+        #player {
+            position: absolute;
+            border-radius: 50%;
+            background: #3498db;
+            box-shadow: 0 0 15px #3498db;
+            z-index: 2;
+        }
+        
+        #instructions {
+            margin-top: 20px;
+            font-size: 1rem;
+            color: #aaa;
+            max-width: 80%;
+        }
+        
+        .enemy-type {
+            display: inline-block;
+            margin: 5px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .normal { background: rgba(255, 123, 37, 0.3); }
+        .shooter { background: rgba(255, 0, 0, 0.3); }
+        .tank { background: rgba(0, 0, 255, 0.3); }
+        .fast { background: rgba(0, 255, 0, 0.3); }
+        .explosive { background: rgba(255, 0, 255, 0.3); }
+        .monster { background: rgba(255, 215, 0, 0.3); }
+        .mutant { background: rgba(128, 0, 128, 0.3); }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>🎁 Выберите сундук:</h2>
-        <button onclick="selectChest('wood')">📦 Сундук (25 кликов)</button>
-        <button disabled class="disabled">🔒 Железный сундук</button>
-        <button onclick="selectChest('pass')">💎 ПАСС СУНДУК (50 кликов)</button>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
         
-        <div class="chest" id="chest" onclick="clickChest()" style="display: none;">📦</div>
+        <div id="ui-overlay">
+            <div id="stats">
+                <div>Волна: <span id="wave-count">1</span></div>
+                <div>Врагов: <span id="enemy-count">0</span></div>
+                <div>Оружие: <span id="weapon-name">Пистолет</span></div>
+            </div>
+            
+            <div id="health-bar-container">
+                <div id="health-bar"></div>
+            </div>
+            
+            <div id="ammo-container">
+                Патроны: <span id="current-ammo">5</span>/<span id="max-ammo">5</span>
+                Магазины: <span id="magazines">30</span>
+                <span id="gold-magazines">0</span>
+            </div>
+            
+            <div id="money-container">
+                Деньги: $<span id="money">0</span>
+            </div>
+            
+            <div id="reload-indicator">
+                <div id="reload-bar"></div>
+            </div>
+            
+            <div id="gold-magazine-indicator">
+                ЗОЛОТЫЕ ПАТРОНЫ!
+            </div>
+            
+            <div id="controls">
+                <div id="joystick-container">
+                    <div id="joystick-background"></div>
+                    <div id="joystick"></div>
+                </div>
+                <div id="shoot-btn">СТРЕЛЯТЬ</div>
+            </div>
+            
+            <div id="wave-alert"></div>
+        </div>
         
-        <div id="status"></div>
-        <div id="result"></div>
+        <div id="start-screen" class="screen">
+            <h1>ВЫЖИВАНИЕ В ВОЛНАХ</h1>
+            <p>Держитесь как можно дольше против волн врагов! Управляйте персонажем с помощью джойстика и стреляйте во врагов.</p>
+            
+            <div>
+                <div class="enemy-type normal">Обычный</div>
+                <div class="enemy-type shooter">Стрелок</div>
+                <div class="enemy-type tank">Танк</div>
+                <div class="enemy-type fast">Быстрый</div>
+                <div class="enemy-type explosive">Взрывной</div>
+                <div class="enemy-type monster">Монстр</div>
+                <div class="enemy-type mutant">Мутант</div>
+            </div>
+            
+            <button id="start-btn">НАЧАТЬ ВЫЖИВАНИЕ</button>
+            <div id="instructions">
+                Используйте джойстик слева для движения и кнопку справа для стрельбы
+            </div>
+        </div>
+        
+        <div id="upgrade-screen" class="screen hidden">
+            <h1>ВЫБОР УЛУЧШЕНИЯ</h1>
+            <p>Волна <span id="upgrade-wave">10</span> завершена! Выберите улучшение:</p>
+            
+            <div class="upgrade-options">
+                <button class="upgrade-btn" data-upgrade="health">+25 к Максимальному Здоровью</button>
+                <button class="upgrade-btn" data-upgrade="damage">+10% к Урону</button>
+            </div>
+        </div>
+        
+        <div id="shop-screen" class="screen hidden">
+            <h1>МАГАЗИН</h1>
+            <p>Ваши деньги: $<span id="shop-money">0</span></p>
+            
+            <div class="shop-items">
+                <button class="shop-btn" data-item="health">Полное лечение - $50</button>
+                <button class="shop-btn" data-item="doublegun">Две пушки - $400</button>
+                <button class="shop-btn" data-item="quadgun">Четыре пушки - $1000</button>
+                <button class="shop-btn" data-item="magazine">+1 Магазин - $15</button>
+                <button class="shop-btn" data-item="goldmagazine">+1 Золотой магазин - $200</button>
+                <button class="shop-btn" data-item="uzi">УЗИ (0.2сек, 0.5ур) - $100</button>
+                <button class="shop-btn" data-item="deagle">Deagle (0.4сек, 2.25ур) - $250</button>
+                <button class="shop-btn" data-item="machinegun">Пулемёт (0.3сек, 2.25ур) - $500</button>
+                <button class="shop-btn" data-item="goldgun">Золотой револьвер (0.5сек, 4ур) - $800</button>
+            </div>
+            
+            <button id="continue-btn">ПРОДОЛЖИТЬ</button>
+        </div>
+        
+        <div id="game-over-screen" class="screen hidden">
+            <h1>ИГРА ОКОНЧЕНА</h1>
+            <p>Вы достигли волны: <span id="final-wave">0</span></p>
+            <p>Ваш счет: <span id="final-score">0</span></p>
+            <p>Заработано: $<span id="final-money">0</span></p>
+            <button id="restart-btn">ИГРАТЬ СНОВА</button>
+        </div>
     </div>
 
     <script>
-        let selectedChest = null;
-        let clickCount = 0;
-        let requiredClicks = 0;
-
-        function selectChest(type) {
-            selectedChest = type;
-            clickCount = 0;
-            const chest = document.getElementById('chest');
-            chest.style.display = 'block';
-            chest.textContent = '📦'; 
-            
-            requiredClicks = type === 'wood' ? 25 : 50;
-            updateStatus();
-            document.getElementById('result').innerHTML = '';
+        // Получаем элементы DOM
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('start-screen');
+        const upgradeScreen = document.getElementById('upgrade-screen');
+        const shopScreen = document.getElementById('shop-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const continueBtn = document.getElementById('continue-btn');
+        const waveCountEl = document.getElementById('wave-count');
+        const enemyCountEl = document.getElementById('enemy-count');
+        const weaponNameEl = document.getElementById('weapon-name');
+        const finalWaveEl = document.getElementById('final-wave');
+        const finalScoreEl = document.getElementById('final-score');
+        const finalMoneyEl = document.getElementById('final-money');
+        const waveAlertEl = document.getElementById('wave-alert');
+        const healthBar = document.getElementById('health-bar');
+        const reloadBar = document.getElementById('reload-bar');
+        const shootBtn = document.getElementById('shoot-btn');
+        const goldMagazineIndicator = document.getElementById('gold-magazine-indicator');
+        const joystick = document.getElementById('joystick');
+        const joystickContainer = document.getElementById('joystick-container');
+        const currentAmmoEl = document.getElementById('current-ammo');
+        const maxAmmoEl = document.getElementById('max-ammo');
+        const magazinesEl = document.getElementById('magazines');
+        const goldMagazinesEl = document.getElementById('gold-magazines');
+        const moneyEl = document.getElementById('money');
+        const shopMoneyEl = document.getElementById('shop-money');
+        const upgradeWaveEl = document.getElementById('upgrade-wave');
+        
+        // Размеры canvas
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
         }
-
-        function clickChest() {
-            if(!selectedChest) return;
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Игровые переменные
+        let gameRunning = false;
+        let player = {
+            x: 0,
+            y: 0,
+            radius: 20,
+            speed: 5,
+            health: 100,
+            maxHealth: 100,
+            color: '#3498db',
+            damageMultiplier: 1,
+            gunType: 'single'
+        };
+        
+        let enemies = [];
+        let bullets = [];
+        let enemyBullets = [];
+        let explosions = [];
+        let wave = 1;
+        let score = 0;
+        let money = 0;
+        
+        // Система патронов
+        let ammo = {
+            current: 5,
+            max: 5,
+            magazines: 30, // 30 магазинов в начале
+            goldMagazines: 0, // Золотые магазины
+            isReloading: false,
+            reloadTime: 2000, // 2 секунды на перезарядку
+            usingGoldAmmo: false // Флаг использования золотых патронов
+        };
+        
+        // Система оружия
+        const weapons = {
+            pistol: { name: "Пистолет", delay: 330, damage: 1, cost: 0 },
+            uzi: { name: "УЗИ", delay: 200, damage: 0.5, cost: 100 },
+            deagle: { name: "Deagle", delay: 400, damage: 2.25, cost: 250 },
+            machinegun: { name: "Пулемёт", delay: 300, damage: 2.25, cost: 500 },
+            goldgun: { name: "Золотой револьвер", delay: 500, damage: 4, cost: 800 }
+        };
+        
+        let currentWeapon = weapons.pistol;
+        
+        // Переменные для управления джойстиком
+        let joystickActive = false;
+        let joystickAngle = 0;
+        let joystickDistance = 0;
+        let maxJoystickDistance = 35;
+        
+        // Переменные для управления стрельбой
+        let lastShot = 0;
+        let shootDirection = { x: 0, y: -1 }; // Направление по умолчанию (вверх)
+        
+        // Типы врагов
+        const ENEMY_TYPES = {
+            NORMAL: 'normal',
+            SHOOTER: 'shooter',
+            TANK: 'tank',
+            FAST: 'fast',
+            EXPLOSIVE: 'explosive',
+            MONSTER: 'monster',
+            MUTANT: 'mutant'
+        };
+        
+        // Инициализация игры
+        function initGame() {
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.health = player.maxHealth;
+            player.damageMultiplier = 1;
+            player.gunType = 'single';
             
-            const chest = document.getElementById('chest');
-            chest.classList.add('gold-flash');
-            setTimeout(() => chest.classList.remove('gold-flash'), 100);
+            enemies = [];
+            bullets = [];
+            enemyBullets = [];
+            explosions = [];
+            wave = 1;
+            score = 0;
+            money = 0;
             
-            // Анимация нажатия
-            chest.style.transform = 'scale(0.95)';
-            setTimeout(() => chest.style.transform = 'scale(1)', 100);
+            // Сброс патронов - 30 обычных магазинов
+            ammo.current = 5;
+            ammo.max = 5;
+            ammo.magazines = 30;
+            ammo.goldMagazines = 0;
+            ammo.isReloading = false;
+            ammo.usingGoldAmmo = false;
             
-            clickCount++;
-            updateStatus();
+            // Сброс оружия
+            currentWeapon = weapons.pistol;
+            weaponNameEl.textContent = currentWeapon.name;
             
-            if(clickCount >= requiredClicks) {
-                openChest();
+            updateHealthBar();
+            updateAmmoDisplay();
+            updateMoneyDisplay();
+            startWave();
+            
+            updateStats();
+        }
+        
+        // Начать волну
+        function startWave() {
+            // Увеличение здоровья врагов каждые 12 волн
+            const healthMultiplier = 1 + (0.5 * Math.floor((wave - 1) / 12));
+            
+            const baseEnemyCount = 3 + wave * 2;
+            const enemyCount = Math.min(baseEnemyCount, 50); // Максимум 50 врагов за волну
+            
+            for (let i = 0; i < enemyCount; i++) {
+                let type;
+                const rand = Math.random();
+                
+                if (wave >= 35) {
+                    // После 35 волны - мутанты (5% шанс)
+                    if (rand < 0.05) type = ENEMY_TYPES.MUTANT;
+                    else if (rand < 0.15) type = ENEMY_TYPES.MONSTER;
+                    else if (rand < 0.3) type = ENEMY_TYPES.EXPLOSIVE;
+                    else if (rand < 0.5) type = ENEMY_TYPES.FAST;
+                    else if (rand < 0.7) type = ENEMY_TYPES.SHOOTER;
+                    else if (rand < 0.85) type = ENEMY_TYPES.TANK;
+                    else type = ENEMY_TYPES.NORMAL;
+                } else if (wave >= 20) {
+                    // После 20 волны - монстры (5% шанс)
+                    if (rand < 0.05) type = ENEMY_TYPES.MONSTER;
+                    else if (rand < 0.2) type = ENEMY_TYPES.EXPLOSIVE;
+                    else if (rand < 0.4) type = ENEMY_TYPES.FAST;
+                    else if (rand < 0.6) type = ENEMY_TYPES.SHOOTER;
+                    else if (rand < 0.8) type = ENEMY_TYPES.TANK;
+                    else type = ENEMY_TYPES.NORMAL;
+                } else if (wave >= 10) {
+                    // После 10 волны - взрывные (10% шанс)
+                    if (rand < 0.1) type = ENEMY_TYPES.EXPLOSIVE;
+                    else if (rand < 0.3) type = ENEMY_TYPES.FAST;
+                    else if (rand < 0.5) type = ENEMY_TYPES.SHOOTER;
+                    else if (rand < 0.7) type = ENEMY_TYPES.TANK;
+                    else type = ENEMY_TYPES.NORMAL;
+                } else if (wave >= 5) {
+                    // После 5 волны - быстрые (20% шанс)
+                    if (rand < 0.2) type = ENEMY_TYPES.FAST;
+                    else if (rand < 0.4) type = ENEMY_TYPES.SHOOTER;
+                    else if (rand < 0.6) type = ENEMY_TYPES.TANK;
+                    else type = ENEMY_TYPES.NORMAL;
+                } else {
+                    // До 5 волны - обычные враги, стрелки и танки
+                    if (rand < 0.6) type = ENEMY_TYPES.NORMAL;
+                    else if (rand < 0.8) type = ENEMY_TYPES.SHOOTER;
+                    else type = ENEMY_TYPES.TANK;
+                }
+                
+                spawnEnemy(type, healthMultiplier);
+            }
+            
+            waveCountEl.textContent = wave;
+            enemyCountEl.textContent = enemyCount;
+            
+            // Показать оповещение о волне
+            waveAlertEl.textContent = `ВОЛНА ${wave}`;
+            waveAlertEl.style.opacity = 1;
+            
+            setTimeout(() => {
+                waveAlertEl.style.opacity = 0;
+            }, 2000);
+        }
+        
+        // Создать врага
+        function spawnEnemy(type, healthMultiplier = 1) {
+            const side = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
+            let x, y;
+            
+            switch(side) {
+                case 0: // top
+                    x = Math.random() * canvas.width;
+                    y = -30;
+                    break;
+                case 1: // right
+                    x = canvas.width + 30;
+                    y = Math.random() * canvas.height;
+                    break;
+                case 2: // bottom
+                    x = Math.random() * canvas.width;
+                    y = canvas.height + 30;
+                    break;
+                case 3: // left
+                    x = -30;
+                    y = Math.random() * canvas.height;
+                    break;
+            }
+            
+            let speed, radius, health, damage, color, shootDelay;
+            
+            switch(type) {
+                case ENEMY_TYPES.NORMAL:
+                    speed = 1 + wave * 0.2;
+                    radius = 15 + Math.random() * 5;
+                    health = 1 + Math.floor(wave / 2);
+                    damage = 10;
+                    color = `hsl(${Math.random() * 60}, 70%, 50%)`;
+                    break;
+                    
+                case ENEMY_TYPES.SHOOTER:
+                    speed = 0.8 + wave * 0.15;
+                    radius = 12 + Math.random() * 4;
+                    health = 2 + Math.floor(wave / 1.5);
+                    damage = 15;
+                    color = `hsl(0, 70%, 50%)`;
+                    shootDelay = 2000; // Стреляет каждые 2 секунды
+                    break;
+                    
+                case ENEMY_TYPES.TANK:
+                    speed = 0.5 + wave * 0.1;
+                    radius = 25 + Math.random() * 8;
+                    health = 5 + Math.floor(wave);
+                    damage = 20;
+                    color = `hsl(240, 70%, 50%)`;
+                    break;
+                    
+                case ENEMY_TYPES.FAST:
+                    speed = 1.5 + wave * 0.25;
+                    radius = 10 + Math.random() * 4;
+                    health = 1 + Math.floor(wave / 3);
+                    damage = 8;
+                    color = `hsl(120, 70%, 50%)`;
+                    break;
+                    
+                case ENEMY_TYPES.EXPLOSIVE:
+                    speed = 0.9 + wave * 0.18;
+                    radius = 18 + Math.random() * 6;
+                    health = 3 + Math.floor(wave / 1.2);
+                    damage = 25;
+                    color = `hsl(300, 70%, 50%)`;
+                    break;
+                    
+                case ENEMY_TYPES.MONSTER:
+                    speed = 1.2 + wave * 0.22;
+                    radius = 22 + Math.random() * 7;
+                    health = 6 + Math.floor(wave / 0.8);
+                    damage = 30;
+                    color = `hsl(60, 70%, 50%)`;
+                    break;
+                    
+                case ENEMY_TYPES.MUTANT:
+                    speed = 0.7 + wave * 0.12;
+                    radius = 28 + Math.random() * 10;
+                    health = 15 + Math.floor(wave / 0.5);
+                    damage = 35;
+                    color = `hsl(270, 70%, 50%)`;
+                    break;
+            }
+            
+            // Умножаем здоровье на множитель
+            health = Math.floor(health * healthMultiplier);
+            
+            const enemy = {
+                x, y, radius,
+                speed,
+                health,
+                maxHealth: health,
+                color,
+                damage,
+                type,
+                lastShot: 0,
+                lastExplosion: 0,
+                willExplode: type === ENEMY_TYPES.EXPLOSIVE
+            };
+            
+            if (type === ENEMY_TYPES.SHOOTER) {
+                enemy.shootDelay = shootDelay;
+            }
+            
+            enemies.push(enemy);
+        }
+        
+        // Обновление статистики
+        function updateStats() {
+            waveCountEl.textContent = wave;
+            enemyCountEl.textContent = enemies.length;
+            weaponNameEl.textContent = currentWeapon.name;
+        }
+        
+        // Обновление полоски здоровья
+        function updateHealthBar() {
+            const healthPercent = (player.health / player.maxHealth) * 100;
+            healthBar.style.width = `${healthPercent}%`;
+            
+            // Меняем цвет в зависимости от уровня здоровья
+            if (healthPercent > 70) {
+                healthBar.style.background = 'linear-gradient(to right, #4caf50, #8bc34a)';
+            } else if (healthPercent > 30) {
+                healthBar.style.background = 'linear-gradient(to right, #ff9800, #ffc107)';
+            } else {
+                healthBar.style.background = 'linear-gradient(to right, #f44336, #ff5722)';
             }
         }
-
-        function updateStatus() {
-            document.getElementById('status').textContent = 
-                `🔨 Прогресс: ${clickCount}/${requiredClicks}`;
-        }
-
-        function openChest() {
-            let reward = '';
-            const random = Math.random() * 100;
+        
+        // Обновление отображения патронов
+        function updateAmmoDisplay() {
+            currentAmmoEl.textContent = ammo.current;
+            maxAmmoEl.textContent = ammo.max;
+            magazinesEl.textContent = ammo.magazines;
             
-            if(selectedChest === 'wood') {
-                if(random <= 40) {
-                    reward = '400 💎';
-                } else if(random <= 65) {
-                    reward = '800 💎';
-                } else if(random <= 70) {
-                    reward = '💯 +100 опыта';
-                } else {
-                    reward = '600 💎'; // Вместо "ничего"
+            // Показываем золотые магазины если они есть
+            if (ammo.goldMagazines > 0) {
+                goldMagazinesEl.textContent = ` Золотые: ${ammo.goldMagazines}`;
+            } else {
+                goldMagazinesEl.textContent = '';
+            }
+        }
+        
+        // Обновление отображения денег
+        function updateMoneyDisplay() {
+            moneyEl.textContent = money;
+            if (shopMoneyEl) shopMoneyEl.textContent = money;
+        }
+        
+        // Обновление индикатора перезарядки
+        function updateReloadIndicator() {
+            const now = Date.now();
+            
+            if (ammo.isReloading) {
+                const reloadStartTime = now - ammo.reloadStartTime;
+                const reloadPercent = Math.min(100, (reloadStartTime / ammo.reloadTime) * 100);
+                
+                reloadBar.style.width = `${reloadPercent}%`;
+                
+                if (reloadPercent >= 100) {
+                    ammo.isReloading = false;
+                    ammo.current = ammo.max;
+                    
+                    // Используем золотые магазины в первую очередь
+                    if (ammo.goldMagazines > 0) {
+                        ammo.goldMagazines--;
+                        ammo.usingGoldAmmo = true;
+                        shootBtn.classList.add('gold-ammo');
+                        goldMagazineIndicator.style.opacity = 1;
+                        
+                        // Скрываем индикатор через 3 секунды
+                        setTimeout(() => {
+                            goldMagazineIndicator.style.opacity = 0;
+                        }, 3000);
+                    } else {
+                        ammo.magazines--;
+                        ammo.usingGoldAmmo = false;
+                        shootBtn.classList.remove('gold-ammo');
+                    }
+                    
+                    updateAmmoDisplay();
+                    shootBtn.classList.remove('reloading');
                 }
-            } 
-            else if(selectedChest === 'pass') {
-                if(random <= 50) {
-                    reward = '1250 💎';
-                } else if(random <= 85) {
-                    reward = '1500 💎';
-                } else if(random <= 86) {
-                    reward = '💎 1250 + 💯 1000 опыта';
+            } else if (ammo.current === 0 && (ammo.magazines > 0 || ammo.goldMagazines > 0)) {
+                // Начинаем автоматическую перезарядку
+                ammo.isReloading = true;
+                ammo.reloadStartTime = now;
+                shootBtn.classList.add('reloading');
+            }
+        }
+        
+        // Основной игровой цикл
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // Очистка canvas
+            ctx.fillStyle = '#0f2027';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Движение игрока с помощью джойстика
+            if (joystickActive) {
+                const moveX = Math.cos(joystickAngle) * player.speed * (joystickDistance / maxJoystickDistance);
+                const moveY = Math.sin(joystickAngle) * player.speed * (joystickDistance / maxJoystickDistance);
+                
+                // Обновляем направление стрельбы на основе движения
+                if (joystickDistance > 5) {
+                    shootDirection = { x: moveX, y: moveY };
+                    // Нормализуем направление
+                    const length = Math.sqrt(shootDirection.x * shootDirection.x + shootDirection.y * shootDirection.y);
+                    shootDirection.x /= length;
+                    shootDirection.y /= length;
+                }
+                
+                player.x += moveX;
+                player.y += moveY;
+                
+                // Ограничиваем игрока в пределах canvas
+                player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+                player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+            }
+            
+            // Обновление индикатора перезарядки
+            updateReloadIndicator();
+            
+            // Обновление пуль
+            updateBullets();
+            
+            // Обновление вражеских пуль
+            updateEnemyBullets();
+            
+            // Обновление взрывов
+            updateExplosions();
+            
+            // Обновление врагов
+            updateEnemies();
+            
+            // Проверка условий волны
+            if (enemies.length === 0) {
+                // Проверяем, нужно ли показать улучшения или магазин
+                if (wave % 10 === 0) {
+                    showUpgradeScreen();
+                    return;
+                } else if (wave % 5 === 0) {
+                    showShopScreen();
+                    return;
                 } else {
-                    reward = '600 💎'; // Вместо "ничего"
+                    wave++;
+                    startWave();
                 }
             }
             
-            document.getElementById('result').innerHTML = `
-                <h3>🎉 Вы получили:</h3>
-                <p style="color: #2e7d32; font-weight: bold;">${reward}</p>
-            `;
+            // Отрисовка игрока
+            drawPlayer();
             
-            // Сброс и анимация
-            selectedChest = null;
-            clickCount = 0;
-            const chest = document.getElementById('chest');
-            chest.style.display = 'none';
-            document.getElementById('status').textContent = '';
+            // Отрисовка врагов
+            drawEnemies();
+            
+            // Отрисовка пуль
+            drawBullets();
+            
+            // Отрисовка вражеских пуль
+            drawEnemyBullets();
+            
+            // Отрисовка взрывов
+            drawExplosions();
+            
+            // Обновление статистики
+            updateStats();
+            
+            // Проверка завершения игры
+            if (player.health <= 0) {
+                gameOver();
+                return;
+            }
+            
+            requestAnimationFrame(gameLoop);
         }
+        
+        // Отрисовка игрока
+        function drawPlayer() {
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fillStyle = player.color;
+            ctx.fill();
+            
+            // Рисуем направление стрельбы
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y);
+            ctx.lineTo(
+                player.x + shootDirection.x * player.radius * 1.5, 
+                player.y + shootDirection.y * player.radius * 1.5
+            );
+            ctx.strokeStyle = '#f1c40f';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+        
+        // Отрисовка врагов
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+                ctx.fillStyle = enemy.color;
+                ctx.fill();
+                
+                // Для специальных врагов добавляем индикаторы
+                switch(enemy.type) {
+                    case ENEMY_TYPES.SHOOTER:
+                        ctx.beginPath();
+                        ctx.arc(enemy.x, enemy.y, enemy.radius * 0.6, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ff0000';
+                        ctx.fill();
+                        break;
+                        
+                    case ENEMY_TYPES.TANK:
+                        ctx.beginPath();
+                        ctx.arc(enemy.x, enemy.y, enemy.radius * 0.8, 0, Math.PI * 2);
+                        ctx.fillStyle = '#0000ff';
+                        ctx.fill();
+                        break;
+                        
+                    case ENEMY_TYPES.FAST:
+                        ctx.beginPath();
+                        ctx.arc(enemy.x, enemy.y, enemy.radius * 0.7, 0, Math.PI * 2);
+                        ctx.fillStyle = '#00ff00';
+                        ctx.fill();
+                        break;
+                        
+                    case ENEMY_TYPES.EXPLOSIVE:
+                        ctx.beginPath();
+                        ctx.arc(enemy.x, enemy.y, enemy.radius * 0.7, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ff00ff';
+                        ctx.fill();
+                        break;
+                        
+                    case ENEMY_TYPES.MONSTER:
+                        ctx.beginPath();
+                        ctx.arc(enemy.x, enemy.y, enemy.radius * 0.7, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ffd700';
+                        ctx.fill();
+                        break;
+                        
+                    case ENEMY_TYPES.MUTANT:
+                        ctx.beginPath();
+                        ctx.arc(enemy.x, enemy.y, enemy.radius * 0.7, 0, Math.PI * 2);
+                        ctx.fillStyle = '#800080';
+                        ctx.fill();
+                        break;
+                }
+                
+                // Полоска здоровья
+                const healthPercent = enemy.health / enemy.maxHealth;
+                ctx.fillStyle = 'red';
+                ctx.fillRect(
+                    enemy.x - enemy.radius, 
+                    enemy.y - enemy.radius - 8, 
+                    enemy.radius * 2 * healthPercent, 
+                    4
+                );
+                
+                ctx.fillStyle = '#333';
+                ctx.fillRect(
+                    enemy.x - enemy.radius + enemy.radius * 2 * healthPercent, 
+                    enemy.y - enemy.radius - 8, 
+                    enemy.radius * 2 * (1 - healthPercent), 
+                    4
+                );
+            });
+        }
+        
+        // Отрисовка пуль
+        function drawBullets() {
+            bullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
+                
+                // Золотые пули выглядят иначе
+                if (bullet.isGold) {
+                    ctx.fillStyle = 'gold';
+                    ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
+                    ctx.shadowBlur = 10;
+                } else {
+                    ctx.fillStyle = '#f1c40f';
+                    ctx.shadowColor = 'rgba(241, 196, 15, 0.8)';
+                    ctx.shadowBlur = 5;
+                }
+                
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+        }
+        
+        // Отрисовка вражеских пуль
+        function drawEnemyBullets() {
+            enemyBullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff0000';
+                ctx.fill();
+            });
+        }
+        
+        // Отрисовка взрывов
+        function drawExplosions() {
+            explosions.forEach(explosion => {
+                ctx.beginPath();
+                ctx.arc(explosion.x, explosion.y, explosion.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff5722';
+                ctx.fill();
+            });
+        }
+        
+        // Обновление пуль
+        function updateBullets() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                
+                // Движение пули
+                bullet.x += bullet.dx;
+                bullet.y += bullet.dy;
+                
+                // Проверка выхода за границы
+                if (bullet.x < 0 || bullet.x > canvas.width || 
+                    bullet.y < 0 || bullet.y > canvas.height) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+                
+                // Проверка столкновений с врагами
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    const dx = bullet.x - enemy.x;
+                    const dy = bullet.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < enemy.radius + 5) {
+                        // Попадание по врагу
+                        let damage = currentWeapon.damage * player.damageMultiplier;
+                        
+                        // Удваиваем урон если это золотая пуля
+                        if (bullet.isGold) {
+                            damage *= 2;
+                        }
+                        
+                        enemy.health -= damage;
+                        
+                        if (enemy.health <= 0) {
+                            // Уничтожение врага
+                            let points = 10;
+                            let moneyReward = 1;
+                            
+                            switch(enemy.type) {
+                                case ENEMY_TYPES.SHOOTER:
+                                    points = 20;
+                                    moneyReward = 2;
+                                    break;
+                                case ENEMY_TYPES.TANK:
+                                    points = 30;
+                                    moneyReward = 3;
+                                    break;
+                                case ENEMY_TYPES.FAST:
+                                    points = 15;
+                                    moneyReward = 2;
+                                    break;
+                                case ENEMY_TYPES.EXPLOSIVE:
+                                    points = 25;
+                                    moneyReward = 4;
+                                    break;
+                                case ENEMY_TYPES.MONSTER:
+                                    points = 40;
+                                    moneyReward = 6;
+                                    break;
+                                case ENEMY_TYPES.MUTANT:
+                                    points = 60;
+                                    moneyReward = 10;
+                                    break;
+                            }
+                            
+                            score += points * wave;
+                            money += moneyReward;
+                            updateMoneyDisplay();
+                            
+                            // Если враг взрывной, создаем взрыв через 3 секунды
+                            if (enemy.willExplode) {
+                                setTimeout(() => {
+                                    createExplosion(enemy.x, enemy.y, enemy.radius * 2);
+                                }, 3000);
+                            }
+                            
+                            enemies.splice(j, 1);
+                        }
+                        
+                        bullets.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Создать взрыв
+        function createExplosion(x, y, radius) {
+            explosions.push({
+                x, y, radius,
+                startTime: Date.now(),
+                duration: 500 // Взрыв длится 0.5 секунды
+            });
+            
+            // Проверяем попадание по игроку
+            const dx = x - player.x;
+            const dy = y - player.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < radius + player.radius) {
+                player.health -= 30;
+                updateHealthBar();
+            }
+            
+            // Проверяем попадание по другим врагам
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                const edx = x - enemy.x;
+                const edy = y - enemy.y;
+                const edistance = Math.sqrt(edx * edx + edy * edy);
+                
+                if (edistance < radius + enemy.radius) {
+                    enemy.health -= 50;
+                    if (enemy.health <= 0) {
+                        enemies.splice(i, 1);
+                    }
+                }
+            }
+        }
+        
+        // Обновление взрывов
+        function updateExplosions() {
+            const now = Date.now();
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const explosion = explosions[i];
+                if (now - explosion.startTime > explosion.duration) {
+                    explosions.splice(i, 1);
+                }
+            }
+        }
+        
+        // Обновление вражеских пуль
+        function updateEnemyBullets() {
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                const bullet = enemyBullets[i];
+                
+                // Движение пули
+                bullet.x += bullet.dx;
+                bullet.y += bullet.dy;
+                
+                // Проверка выхода за границы
+                if (bullet.x < 0 || bullet.x > canvas.width || 
+                    bullet.y < 0 || bullet.y > canvas.height) {
+                    enemyBullets.splice(i, 1);
+                    continue;
+                }
+                
+                // Проверка столкновения с игроком
+                const dx = bullet.x - player.x;
+                const dy = bullet.y - player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < player.radius + 5) {
+                    // Попадание по игроку
+                    player.health -= 5;
+                    updateHealthBar();
+                    enemyBullets.splice(i, 1);
+                    
+                    if (player.health <= 0) {
+                        player.health = 0;
+                        updateHealthBar();
+                    }
+                }
+            }
+        }
+        
+        // Обновление врагов
+        function updateEnemies() {
+            const now = Date.now();
+            
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                
+                // Движение к игроку
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                enemy.x += (dx / distance) * enemy.speed;
+                enemy.y += (dy / distance) * enemy.speed;
+                
+                // Стрельба для врагов-стрелков
+                if (enemy.type === ENEMY_TYPES.SHOOTER && now - enemy.lastShot > enemy.shootDelay) {
+                    enemyShoot(enemy);
+                    enemy.lastShot = now;
+                }
+                
+                // Взрывы для мутантов
+                if (enemy.type === ENEMY_TYPES.MUTANT && now - enemy.lastExplosion > 10000) {
+                    createExplosion(enemy.x, enemy.y, enemy.radius * 1.5);
+                    enemy.health -= enemy.maxHealth * 0.2; // 20% урона себе
+                    enemy.lastExplosion = now;
+                }
+                
+                // Проверка столкновения с игроком
+                if (distance < enemy.radius + player.radius) {
+                    player.health -= enemy.damage;
+                    enemies.splice(i, 1);
+                    updateHealthBar();
+                    
+                    if (player.health <= 0) {
+                        player.health = 0;
+                        updateHealthBar();
+                    }
+                }
+            }
+        }
+        
+        // Выстрел врага
+        function enemyShoot(enemy) {
+            const dx = player.x - enemy.x;
+            const dy = player.y - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Нормализуем направление
+            const directionX = dx / distance;
+            const directionY = dy / distance;
+            
+            enemyBullets.push({
+                x: enemy.x,
+                y: enemy.y,
+                dx: directionX * 7,
+                dy: directionY * 7
+            });
+        }
+        
+        // Выстрел игрока
+        function shoot() {
+            const now = Date.now();
+            
+            if (ammo.isReloading) return;
+            if (ammo.current <= 0) {
+                if (ammo.magazines > 0 || ammo.goldMagazines > 0) {
+                    ammo.isReloading = true;
+                    ammo.reloadStartTime = now;
+                    shootBtn.classList.add('reloading');
+                }
+                return;
+            }
+            
+            if (now - lastShot > currentWeapon.delay) {
+                // Уменьшаем патроны
+                ammo.current--;
+                updateAmmoDisplay();
+                
+                // Определяем, золотые ли это патроны
+                const isGold = ammo.usingGoldAmmo;
+                
+                // Создаем пули в зависимости от типа оружия
+                if (player.gunType === 'single') {
+                    // Одна пуля
+                    bullets.push({
+                        x: player.x,
+                        y: player.y,
+                        dx: shootDirection.x * 10,
+                        dy: shootDirection.y * 10,
+                        damage: currentWeapon.damage * player.damageMultiplier,
+                        isGold: isGold
+                    });
+                } else if (player.gunType === 'double') {
+                    // Две пули под небольшим углом
+                    const angle = Math.atan2(shootDirection.y, shootDirection.x);
+                    bullets.push({
+                        x: player.x,
+                        y: player.y,
+                        dx: Math.cos(angle - 0.1) * 10,
+                        dy: Math.sin(angle - 0.1) * 10,
+                        damage: currentWeapon.damage * player.damageMultiplier,
+                        isGold: isGold
+                    });
+                    bullets.push({
+                        x: player.x,
+                        y: player.y,
+                        dx: Math.cos(angle + 0.1) * 10,
+                        dy: Math.sin(angle + 0.1) * 10,
+                        damage: currentWeapon.damage * player.damageMultiplier,
+                        isGold: isGold
+                    });
+                } else if (player.gunType === 'quad') {
+                    // Четыре пули в разные стороны
+                    for (let i = 0; i < 4; i++) {
+                        const angle = (Math.PI * 2 / 4) * i;
+                        bullets.push({
+                            x: player.x,
+                            y: player.y,
+                            dx: Math.cos(angle) * 10,
+                            dy: Math.sin(angle) * 10,
+                            damage: currentWeapon.damage * player.damageMultiplier,
+                            isGold: isGold
+                        });
+                    }
+                }
+                
+                lastShot = now;
+                
+                // Если патроны закончились, начинаем перезарядку
+                if (ammo.current === 0 && (ammo.magazines > 0 || ammo.goldMagazines > 0)) {
+                    ammo.isReloading = true;
+                    ammo.reloadStartTime = now;
+                    shootBtn.classList.add('reloading');
+                }
+            }
+        }
+        
+        // Показать экран улучшений
+        function showUpgradeScreen() {
+            gameRunning = false;
+            upgradeWaveEl.textContent = wave;
+            upgradeScreen.classList.remove('hidden');
+        }
+        
+        // Показать экран магазина
+        function showShopScreen() {
+            gameRunning = false;
+            shopScreen.classList.remove('hidden');
+        }
+        
+        // Применить улучшение
+        function applyUpgrade(type) {
+            if (type === 'health') {
+                player.maxHealth += 25;
+                player.health = player.maxHealth;
+                updateHealthBar();
+            } else if (type === 'damage') {
+                player.damageMultiplier *= 1.1;
+            }
+            
+            upgradeScreen.classList.add('hidden');
+            wave++;
+            startWave();
+            gameRunning = true;
+            gameLoop();
+        }
+        
+        // Купить предмет в магазине
+        function buyItem(item) {
+            switch(item) {
+                case 'health':
+                    if (money >= 50) {
+                        money -= 50;
+                        player.health = player.maxHealth;
+                        updateHealthBar();
+                        updateMoneyDisplay();
+                    }
+                    break;
+                    
+                case 'doublegun':
+                    if (money >= 400) {
+                        money -= 400;
+                        player.gunType = 'double';
+                        updateMoneyDisplay();
+                    }
+                    break;
+                    
+                case 'quadgun':
+                    if (money >= 1000) {
+                        money -= 1000;
+                        player.gunType = 'quad';
+                        updateMoneyDisplay();
+                    }
+                    break;
+                    
+                case 'magazine':
+                    if (money >= 15) {
+                        money -= 15;
+                        ammo.magazines++;
+                        updateAmmoDisplay();
+                        updateMoneyDisplay();
+                    }
+                    break;
+                    
+                case 'goldmagazine':
+                    if (money >= 200) {
+                        money -= 200;
+                        ammo.goldMagazines++;
+                        updateAmmoDisplay();
+                        updateMoneyDisplay();
+                    }
+                    break;
+                    
+                case 'uzi':
+                    if (money >= 100) {
+                        money -= 100;
+                        currentWeapon = weapons.uzi;
+                        weaponNameEl.textContent = currentWeapon.name;
+                        updateMoneyDisplay();
+                    }
+                    break;
+                    
+                case 'deagle':
+                    if (money >= 250) {
+                        money -= 250;
+                        currentWeapon = weapons.deagle;
+                        weaponNameEl.textContent = currentWeapon.name;
+                        updateMoneyDisplay();
+                    }
+                    break;
+                    
+                case 'machinegun':
+                    if (money >= 500) {
+                        money -= 500;
+                        currentWeapon = weapons.machinegun;
+                        weaponNameEl.textContent = currentWeapon.name;
+                        updateMoneyDisplay();
+                    }
+                    break;
+                    
+                case 'goldgun':
+                    if (money >= 800) {
+                        money -= 800;
+                        currentWeapon = weapons.goldgun;
+                        weaponNameEl.textContent = currentWeapon.name;
+                        updateMoneyDisplay();
+                    }
+                    break;
+            }
+        }
+        
+        // Продолжить игру после магазина
+        function continueGame() {
+            shopScreen.classList.add('hidden');
+            wave++;
+            startWave();
+            gameRunning = true;
+            gameLoop();
+        }
+        
+        // Конец игры
+        function gameOver() {
+            gameRunning = false;
+            finalWaveEl.textContent = wave;
+            finalScoreEl.textContent = score;
+            finalMoneyEl.textContent = money;
+            gameOverScreen.classList.remove('hidden');
+        }
+        
+        // Управление джойстиком
+        function setupJoystick() {
+            let touchId = null;
+            
+            joystickContainer.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (touchId === null) {
+                    const touch = e.touches[0];
+                    touchId = touch.identifier;
+                    joystickActive = true;
+                    updateJoystickPosition(touch);
+                }
+            });
+            
+            joystickContainer.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (touchId !== null) {
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        const touch = e.changedTouches[i];
+                        if (touch.identifier === touchId) {
+                            updateJoystickPosition(touch);
+                            break;
+                        }
+                    }
+                }
+            });
+            
+            const joystickEnd = () => {
+                touchId = null;
+                joystickActive = false;
+                // Возвращаем джойстик в центр
+                joystick.style.transform = 'translate(0, 0)';
+            };
+            
+            joystickContainer.addEventListener('touchend', joystickEnd);
+            joystickContainer.addEventListener('touchcancel', joystickEnd);
+            
+            function updateJoystickPosition(touch) {
+                const rect = joystickContainer.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                let x = touch.clientX - centerX;
+                let y = touch.clientY - centerY;
+                
+                // Ограничиваем расстояние джойстика от центра
+                joystickDistance = Math.min(maxJoystickDistance, Math.sqrt(x * x + y * y));
+                joystickAngle = Math.atan2(y, x);
+                
+                // Вычисляем новые координаты джойстика с учетом ограничения
+                const limitedX = Math.cos(joystickAngle) * joystickDistance;
+                const limitedY = Math.sin(joystickAngle) * joystickDistance;
+                
+                // Перемещаем джойстик
+                joystick.style.transform = `translate(${limitedX}px, ${limitedY}px)`;
+            }
+        }
+        
+        // Управление стрельбой
+        function setupShooting() {
+            shootBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                shoot();
+            });
+            
+            // Предотвращение скролла при касании элементов управления
+            document.querySelectorAll('#joystick-container, #shoot-btn').forEach(el => {
+                el.addEventListener('touchstart', e => {
+                    e.preventDefault();
+                });
+            });
+        }
+        
+        // Настройка кнопок улучшений
+        function setupUpgradeButtons() {
+            document.querySelectorAll('.upgrade-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const upgradeType = e.target.getAttribute('data-upgrade');
+                    applyUpgrade(upgradeType);
+                });
+            });
+        }
+        
+        // Настройка кнопок магазина
+        function setupShopButtons() {
+            document.querySelectorAll('.shop-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const itemType = e.target.getAttribute('data-item');
+                    buyItem(itemType);
+                });
+            });
+            
+            continueBtn.addEventListener('click', continueGame);
+        }
+        
+        // Запуск игры
+        startBtn.addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            gameRunning = true;
+            initGame();
+            gameLoop();
+        });
+        
+        // Перезапуск игры
+        restartBtn.addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            gameRunning = true;
+            initGame();
+            gameLoop();
+        });
+        
+        // Инициализация управления
+        setupJoystick();
+        setupShooting();
+        setupUpgradeButtons();
+        setupShopButtons();
     </script>
 </body>
 </html>
